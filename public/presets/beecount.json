@@ -1,0 +1,42 @@
+{
+  "name": "蜜蜂记账 App Store 宣传图",
+  "deviceSize": "iphone_6.7",
+  "showPhoneFrame": true,
+  "slides": [
+    {
+      "title": "蜜蜂记账",
+      "subtitle": "简洁 · 安全 · 可控",
+      "gradientColors": ["#1a1a0a", "#0f0f05", "#000000"]
+    },
+    {
+      "title": "多种记账方式",
+      "subtitle": "语音 · 拍照 · 截图 · 分享",
+      "gradientColors": ["#1a1a0a", "#0f0f05", "#000000"]
+    },
+    {
+      "title": "统计分析",
+      "subtitle": "收支趋势一目了然",
+      "gradientColors": ["#1a1a0a", "#0f0f05", "#000000"]
+    },
+    {
+      "title": "多种云同步",
+      "subtitle": "iCloud · WebDAV · Supabase",
+      "gradientColors": ["#1a1a0a", "#0f0f05", "#000000"]
+    },
+    {
+      "title": "个性定制",
+      "subtitle": "主题色 · 多账本",
+      "gradientColors": ["#1a1a0a", "#0f0f05", "#000000"]
+    },
+    {
+      "title": "AI 对话记账",
+      "subtitle": "像聊天一样记账",
+      "gradientColors": ["#1a1a0a", "#0f0f05", "#000000"]
+    },
+    {
+      "title": "暗黑模式",
+      "subtitle": "护眼 · OLED友好",
+      "gradientColors": ["#0a0a0a", "#050505", "#000000"]
+    }
+  ]
+}
