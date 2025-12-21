@@ -1,0 +1,21 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@beeshot/core": ["../../packages/core/src"],
+      "@beeshot/core/*": ["../../packages/core/src/*"],
+      "@beeshot/renderer": ["../../packages/renderer/src"],
+      "@beeshot/renderer/*": ["../../packages/renderer/src/*"],
+      "@beeshot/editor": ["../../packages/editor/src"],
+      "@beeshot/editor/*": ["../../packages/editor/src/*"],
+      "@beeshot/ui": ["../../packages/ui/src"],
+      "@beeshot/ui/*": ["../../packages/ui/src/*"],
+      "@beeshot/api": ["../../packages/api/src"],
+      "@beeshot/api/*": ["../../packages/api/src/*"]
+    }
+  },
+  "include": ["src/**/*"]
+}

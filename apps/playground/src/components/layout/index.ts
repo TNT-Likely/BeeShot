@@ -1,0 +1,5 @@
+export { IconSidebar, type SidebarTab } from './IconSidebar'
+export { SidePanel } from './SidePanel'
+export { Toolbar } from './Toolbar'
+export { Footer } from './Footer'
+export { Canvas } from './Canvas'

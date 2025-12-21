@@ -1,0 +1,135 @@
+@import "tailwindcss";
+
+/* ============================================
+   BeeShot Design Tokens
+   ============================================ */
+
+@theme {
+  /* Brand Colors - 蜜蜂黄 Honey Yellow */
+  --color-brand: #F8C91C;
+  --color-brand-hover: #EAB308;
+  --color-brand-active: #CA8A04;
+  --color-brand-light: #FDE68A;
+  --color-brand-lighter: #FEF3C7;
+
+  /* Honey/Amber Palette */
+  --color-honey-50: #FFFBEB;
+  --color-honey-100: #FEF3C7;
+  --color-honey-200: #FDE68A;
+  --color-honey-300: #FCD34D;
+  --color-honey-400: #F8C91C;
+  --color-honey-500: #EAB308;
+  --color-honey-600: #CA8A04;
+  --color-honey-700: #A16207;
+  --color-honey-800: #854D0E;
+  --color-honey-900: #713F12;
+
+  /* Sidebar Dark Background */
+  --color-sidebar: #1e1e2e;
+  --color-sidebar-hover: rgba(255, 255, 255, 0.1);
+
+  /* Panel Background */
+  --color-panel: #252536;
+  --color-panel-hover: #2a2a3d;
+
+  /* Canvas Background */
+  --color-canvas-light: #e4e4e7;
+  --color-canvas-dark: #1a1a2e;
+}
+
+/* Base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #f4f4f5;
+  color: #18181b;
+}
+
+.dark body {
+  background: #0f0f1a;
+  color: #fff;
+}
+
+/* Scrollbar */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.2) transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.2);
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+:root:not(.dark) .scrollbar-thin {
+  scrollbar-color: rgba(0,0,0,0.2) transparent;
+}
+
+:root:not(.dark) .scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.2);
+}
+
+:root:not(.dark) .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(0,0,0,0.3);
+}
+
+/* Focus styles */
+:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+/* Input reset */
+input[type="text"],
+input[type="search"] {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Smooth transitions */
+button, a, input {
+  transition-property: color, background-color, border-color, opacity, box-shadow, transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Disable transitions on page load */
+.preload * {
+  transition: none !important;
+}
+
+/* Selection */
+::selection {
+  background: var(--color-brand);
+  color: white;
+}
+
+/* Tabular numbers for zoom/page indicators */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}

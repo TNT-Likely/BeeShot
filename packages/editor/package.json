@@ -1,0 +1,18 @@
+{
+  "name": "@beeshot/editor",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@beeshot/core": "workspace:*",
+    "@beeshot/renderer": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "~5.6.2"
+  }
+}

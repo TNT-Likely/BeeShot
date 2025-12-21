@@ -27,3 +27,15 @@ dist-ssr
 .env
 .env.local
 .env.*.local
+
+# Internal docs (not synced to git)
+.docs
+
+# Claude Code instructions (local only)
+CLAUDE.md
+
+# Backup (old project files)
+backup
+
+# Turbo
+.turbo
