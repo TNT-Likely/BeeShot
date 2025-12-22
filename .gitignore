@@ -39,3 +39,10 @@ backup
 
 # Turbo
 .turbo
+
+# TypeScript build artifacts in source directories
+packages/**/*.js
+packages/**/*.js.map
+apps/**/src/**/*.js
+apps/**/src/**/*.js.map
+!eslint.config.js

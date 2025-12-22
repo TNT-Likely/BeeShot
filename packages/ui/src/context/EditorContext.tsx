@@ -20,12 +20,19 @@ export function EditorProvider({ children, editor }: EditorProviderProps) {
 }
 
 /**
- * 获取编辑器实例
+ * 获取编辑器实例（可能为 null）
  */
-export function useEditorContext(): Editor {
+export function useEditorContext(): Editor | null {
+  return useContext(EditorContext)
+}
+
+/**
+ * 获取编辑器实例（必须存在）
+ */
+export function useEditorContextStrict(): Editor {
   const editor = useContext(EditorContext)
   if (!editor) {
-    throw new Error('useEditorContext must be used within EditorProvider')
+    throw new Error('useEditorContext must be used within EditorProvider with a valid editor')
   }
   return editor
 }

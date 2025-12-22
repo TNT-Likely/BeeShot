@@ -41,6 +41,12 @@ export class ShortcutManager {
     // 删除
     this.register({ key: 'Delete', action: () => this.editor.removeSelectedElements() })
     this.register({ key: 'Backspace', action: () => this.editor.removeSelectedElements() })
+
+    // 剪贴板
+    this.register({ key: 'c', ctrl: true, action: () => this.editor.copy() })
+    this.register({ key: 'v', ctrl: true, action: () => this.editor.paste() })
+    this.register({ key: 'x', ctrl: true, action: () => this.editor.cut() })
+    this.register({ key: 'd', ctrl: true, action: () => this.editor.duplicate() })
   }
 
   /**

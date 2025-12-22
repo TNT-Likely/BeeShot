@@ -9,6 +9,8 @@ export function useSelection(): string[] {
   const [selection, setSelection] = useState<string[]>([])
 
   useEffect(() => {
+    if (!editor) return
+
     const unsubscribe = editor.renderer.on('selection:changed', (ids) => {
       setSelection(ids)
     })

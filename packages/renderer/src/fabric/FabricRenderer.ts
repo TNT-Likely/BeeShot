@@ -1,8 +1,9 @@
-import { Canvas as FabricCanvas, Rect, Gradient, Shadow } from 'fabric'
-import type { Document, Page, Element, Background } from '@beeshot/core'
+import { Canvas as FabricCanvas, Rect, Gradient, Shadow, ActiveSelection, type FabricObject } from 'fabric'
+import type { Document, Page, Element, Background, TextElement, ImageElement, ShapeElement } from '@beeshot/core'
 import { EventEmitter } from '@beeshot/core'
 import type { IRenderer } from '../interface/renderer'
 import type { ExportOptions, RendererEventMap } from '../interface/types'
+import { TextRenderer, ImageRenderer, ShapeRenderer } from './renderers'
 
 /**
  * Fabric.js 渲染器实现
@@ -16,24 +17,34 @@ export class FabricRenderer implements IRenderer {
   private pageWidth = 0
   private pageHeight = 0
 
+  // 元素 ID 到 Fabric 对象的映射
+  private elementMap = new Map<string, FabricObject>()
+  // 页面背景矩形（不可选）
+  private pageRect: Rect | null = null
+
   // ========== 生命周期 ==========
 
   mount(container: HTMLElement): void {
     this.container = container
-    const canvasEl = window.document.createElement('canvas')
-    canvasEl.id = 'beeshot-canvas'
+
+    // 清空容器
+    container.innerHTML = ''
+
+    // 创建 canvas 元素
+    const canvasEl = document.createElement('canvas')
     container.appendChild(canvasEl)
 
     // 获取容器尺寸
     const { width, height } = container.getBoundingClientRect()
 
+    // 初始化 Fabric Canvas
     this.canvas = new FabricCanvas(canvasEl, {
       width: width || 800,
       height: height || 600,
       selection: true,
       preserveObjectStacking: true,
       stopContextMenu: true,
-      backgroundColor: '#e5e5e5',
+      backgroundColor: '#e0e0e0',
     })
 
     this.setupEventListeners()
@@ -48,6 +59,10 @@ export class FabricRenderer implements IRenderer {
         const { width, height } = entry.contentRect
         if (this.canvas && width > 0 && height > 0) {
           this.canvas.setDimensions({ width, height })
+          // 重新居中内容
+          if (this.pageWidth > 0 && this.pageHeight > 0) {
+            this.centerContent()
+          }
           this.canvas.requestRenderAll()
         }
       }
@@ -61,12 +76,16 @@ export class FabricRenderer implements IRenderer {
       this.canvas.dispose()
       this.canvas = null
     }
+    this.elementMap.clear()
   }
 
   destroy(): void {
     this.unmount()
     this.eventEmitter.clear()
   }
+
+  // 锁定标识元素
+  private lockIndicator: HTMLDivElement | null = null
 
   // ========== 事件设置 ==========
 
@@ -84,6 +103,137 @@ export class FabricRenderer implements IRenderer {
     this.canvas.on('selection:cleared', () => {
       this.eventEmitter.emit('selection:changed', [])
     })
+
+    // 鼠标移入对象 - 显示锁定标识
+    this.canvas.on('mouse:over', (e) => {
+      const obj = e.target
+      if (obj && (obj as any).data?.elementId) {
+        const elementId = (obj as any).data.elementId
+        const element = this.getElement(elementId)
+        if (element?.locked) {
+          this.showLockIndicator(obj)
+        }
+      }
+    })
+
+    // 鼠标移出对象 - 隐藏锁定标识
+    this.canvas.on('mouse:out', () => {
+      this.hideLockIndicator()
+    })
+
+    // 对象修改事件
+    this.canvas.on('object:modified', (e) => {
+      const obj = e.target
+      if (obj) {
+        const elementId = (obj as any).data?.elementId
+        if (elementId) {
+          this.syncElementFromFabric(elementId)
+        }
+      }
+    })
+
+    // 文本编辑事件
+    this.canvas.on('text:changed', (e) => {
+      const obj = e.target
+      if (obj) {
+        const elementId = (obj as any).data?.elementId
+        if (elementId) {
+          this.syncElementFromFabric(elementId)
+        }
+      }
+    })
+  }
+
+  /**
+   * 显示锁定标识
+   */
+  private showLockIndicator(obj: FabricObject): void {
+    if (!this.container || !this.canvas) return
+
+    // 创建锁定标识元素
+    if (!this.lockIndicator) {
+      this.lockIndicator = document.createElement('div')
+      this.lockIndicator.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        <span>已锁定</span>
+      `
+      this.lockIndicator.style.cssText = `
+        position: absolute;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 8px;
+        background: rgba(245, 158, 11, 0.9);
+        color: white;
+        font-size: 12px;
+        font-weight: 500;
+        border-radius: 4px;
+        pointer-events: none;
+        z-index: 1000;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      `
+      this.container.appendChild(this.lockIndicator)
+    }
+
+    // 计算位置
+    const zoom = this.canvas.getZoom()
+    const vpt = this.canvas.viewportTransform
+    if (!vpt) return
+
+    const objCenter = obj.getCenterPoint()
+    const left = objCenter.x * zoom + vpt[4]
+    const top = (obj.top || 0) * zoom + vpt[5] - 30
+
+    this.lockIndicator.style.left = `${left}px`
+    this.lockIndicator.style.top = `${top}px`
+    this.lockIndicator.style.transform = 'translateX(-50%)'
+    this.lockIndicator.style.display = 'flex'
+  }
+
+  /**
+   * 隐藏锁定标识
+   */
+  private hideLockIndicator(): void {
+    if (this.lockIndicator) {
+      this.lockIndicator.style.display = 'none'
+    }
+  }
+
+  /**
+   * 将 Fabric 对象的变化同步回元素数据
+   */
+  private syncElementFromFabric(elementId: string): void {
+    const page = this.getActivePage()
+    if (!page) return
+
+    const elementIndex = page.elements.findIndex((el) => el.id === elementId)
+    if (elementIndex === -1) return
+
+    const element = page.elements[elementIndex]
+    const fabricObj = this.elementMap.get(elementId)
+    if (!fabricObj) return
+
+    let updatedElement: Element
+
+    switch (element.type) {
+      case 'text':
+        updatedElement = TextRenderer.toElement(fabricObj as any, element as TextElement)
+        break
+      case 'image':
+        updatedElement = ImageRenderer.toElement(fabricObj as any, element as ImageElement)
+        break
+      case 'shape':
+        updatedElement = ShapeRenderer.toElement(fabricObj, element as ShapeElement)
+        break
+      default:
+        return
+    }
+
+    page.elements[elementIndex] = updatedElement
+    this.eventEmitter.emit('element:modified', updatedElement)
   }
 
   // ========== 文档操作 ==========
@@ -113,16 +263,17 @@ export class FabricRenderer implements IRenderer {
     return this.document?.pages.find((p) => p.id === this.activePageId) || null
   }
 
-  private renderPage(page: Page): void {
+  private async renderPage(page: Page): Promise<void> {
     if (!this.canvas) return
 
     // 清除画布上的所有对象
     this.canvas.getObjects().forEach((obj) => {
       this.canvas?.remove(obj)
     })
+    this.elementMap.clear()
 
     // 创建页面背景矩形
-    const pageRect = new Rect({
+    this.pageRect = new Rect({
       left: 0,
       top: 0,
       width: page.width,
@@ -131,14 +282,20 @@ export class FabricRenderer implements IRenderer {
       selectable: false,
       evented: false,
       shadow: new Shadow({
-        color: 'rgba(0,0,0,0.15)',
-        blur: 20,
+        color: 'rgba(0,0,0,0.25)',
+        blur: 30,
         offsetX: 0,
-        offsetY: 4,
+        offsetY: 8,
       }),
     })
 
-    this.canvas.add(pageRect)
+    this.canvas.add(this.pageRect)
+
+    // 渲染所有元素
+    for (const element of page.elements) {
+      await this.renderElement(element)
+    }
+
     this.canvas.requestRenderAll()
   }
 
@@ -178,23 +335,106 @@ export class FabricRenderer implements IRenderer {
     return '#ffffff'
   }
 
+  /**
+   * 渲染单个元素
+   */
+  private async renderElement(element: Element): Promise<void> {
+    if (!this.canvas) return
+
+    let fabricObj: FabricObject | null = null
+
+    switch (element.type) {
+      case 'text':
+        fabricObj = TextRenderer.create(element as TextElement)
+        break
+      case 'image':
+        fabricObj = await ImageRenderer.create(element as ImageElement)
+        break
+      case 'shape':
+        fabricObj = ShapeRenderer.create(element as ShapeElement)
+        break
+    }
+
+    if (fabricObj) {
+      this.elementMap.set(element.id, fabricObj)
+      this.canvas.add(fabricObj)
+    }
+  }
+
   // ========== 元素操作 ==========
 
-  addElement(_element: Element): void {
-    // TODO: 实现
+  async addElement(element: Element): Promise<void> {
+    const page = this.getActivePage()
+    if (!page || !this.canvas) return
+
+    // 添加到数据模型
+    page.elements.push(element)
+
+    // 渲染到画布
+    await this.renderElement(element)
+    this.canvas.requestRenderAll()
+
+    this.eventEmitter.emit('element:added', element)
   }
 
-  updateElement(_id: string, _props: Partial<Element>): void {
-    // TODO: 实现
+  updateElement(id: string, props: Partial<Element>): void {
+    const page = this.getActivePage()
+    if (!page || !this.canvas) return
+
+    const elementIndex = page.elements.findIndex((el) => el.id === id)
+    if (elementIndex === -1) return
+
+    const element = page.elements[elementIndex]
+    const fabricObj = this.elementMap.get(id)
+
+    // 更新数据模型
+    const updatedElement = { ...element, ...props } as Element
+    page.elements[elementIndex] = updatedElement
+
+    // 更新 Fabric 对象
+    if (fabricObj) {
+      switch (element.type) {
+        case 'text':
+          TextRenderer.update(fabricObj as any, props as Partial<TextElement>)
+          break
+        case 'image':
+          ImageRenderer.update(fabricObj as any, props as Partial<ImageElement>)
+          break
+        case 'shape':
+          ShapeRenderer.update(fabricObj, props as Partial<ShapeElement>)
+          break
+      }
+      this.canvas.requestRenderAll()
+    }
+
+    this.eventEmitter.emit('element:modified', updatedElement)
   }
 
-  removeElement(_id: string): void {
-    // TODO: 实现
+  removeElement(id: string): void {
+    const page = this.getActivePage()
+    if (!page || !this.canvas) return
+
+    const elementIndex = page.elements.findIndex((el) => el.id === id)
+    if (elementIndex === -1) return
+
+    // 从数据模型移除
+    page.elements.splice(elementIndex, 1)
+
+    // 从画布移除
+    const fabricObj = this.elementMap.get(id)
+    if (fabricObj) {
+      this.canvas.remove(fabricObj)
+      this.elementMap.delete(id)
+    }
+
+    this.canvas.requestRenderAll()
+    this.eventEmitter.emit('element:removed', id)
   }
 
-  getElement(_id: string): Element | null {
-    // TODO: 实现
-    return null
+  getElement(id: string): Element | null {
+    const page = this.getActivePage()
+    if (!page) return null
+    return page.elements.find((el) => el.id === id) || null
   }
 
   getAllElements(): Element[] {
@@ -203,17 +443,57 @@ export class FabricRenderer implements IRenderer {
 
   // ========== 选择 ==========
 
-  select(_ids: string[]): void {
-    // TODO: 实现
+  select(ids: string[]): void {
+    if (!this.canvas) return
+
+    const objects = ids
+      .map((id) => this.elementMap.get(id))
+      .filter((obj): obj is FabricObject => obj !== undefined)
+
+    if (objects.length === 0) {
+      this.clearSelection()
+    } else if (objects.length === 1) {
+      this.canvas.setActiveObject(objects[0])
+    } else {
+      const selection = new ActiveSelection(objects, { canvas: this.canvas })
+      this.canvas.setActiveObject(selection)
+    }
+
+    this.canvas.requestRenderAll()
   }
 
   selectAll(): void {
-    // TODO: 实现
+    if (!this.canvas) return
+
+    const objects = Array.from(this.elementMap.values())
+    if (objects.length === 0) return
+
+    if (objects.length === 1) {
+      this.canvas.setActiveObject(objects[0])
+    } else {
+      const selection = new ActiveSelection(objects, { canvas: this.canvas })
+      this.canvas.setActiveObject(selection)
+    }
+
+    this.canvas.requestRenderAll()
   }
 
   getSelection(): string[] {
-    // TODO: 实现
-    return []
+    if (!this.canvas) return []
+
+    const activeObject = this.canvas.getActiveObject()
+    if (!activeObject) return []
+
+    // 如果是多选
+    if (activeObject instanceof ActiveSelection) {
+      return activeObject.getObjects()
+        .map((obj) => (obj as any).data?.elementId)
+        .filter((id): id is string => id !== undefined)
+    }
+
+    // 单选
+    const elementId = (activeObject as any).data?.elementId
+    return elementId ? [elementId] : []
   }
 
   clearSelection(): void {
@@ -253,8 +533,15 @@ export class FabricRenderer implements IRenderer {
     this.eventEmitter.emit('zoom:changed', zoom)
   }
 
-  pan(_deltaX: number, _deltaY: number): void {
-    // TODO: 实现
+  pan(deltaX: number, deltaY: number): void {
+    if (!this.canvas) return
+
+    const vpt = this.canvas.viewportTransform
+    if (vpt) {
+      vpt[4] += deltaX
+      vpt[5] += deltaY
+      this.canvas.setViewportTransform(vpt)
+    }
   }
 
   centerContent(): void {
@@ -279,20 +566,68 @@ export class FabricRenderer implements IRenderer {
 
   // ========== 图层 ==========
 
-  bringToFront(_id: string): void {
-    // TODO: 实现
+  bringToFront(id: string): void {
+    const fabricObj = this.elementMap.get(id)
+    if (fabricObj && this.canvas) {
+      this.canvas.bringObjectToFront(fabricObj)
+      this.updateElementOrder()
+    }
   }
 
-  sendToBack(_id: string): void {
-    // TODO: 实现
+  sendToBack(id: string): void {
+    const fabricObj = this.elementMap.get(id)
+    if (fabricObj && this.canvas && this.pageRect) {
+      this.canvas.sendObjectToBack(fabricObj)
+      // 确保页面背景始终在最底层
+      this.canvas.sendObjectToBack(this.pageRect)
+      this.updateElementOrder()
+    }
   }
 
-  bringForward(_id: string): void {
-    // TODO: 实现
+  bringForward(id: string): void {
+    const fabricObj = this.elementMap.get(id)
+    if (fabricObj && this.canvas) {
+      this.canvas.bringObjectForward(fabricObj)
+      this.updateElementOrder()
+    }
   }
 
-  sendBackward(_id: string): void {
-    // TODO: 实现
+  sendBackward(id: string): void {
+    const fabricObj = this.elementMap.get(id)
+    if (fabricObj && this.canvas && this.pageRect) {
+      this.canvas.sendObjectBackwards(fabricObj)
+      // 确保页面背景始终在最底层
+      const objects = this.canvas.getObjects()
+      const pageRectIndex = objects.indexOf(this.pageRect)
+      const objIndex = objects.indexOf(fabricObj)
+      if (objIndex <= pageRectIndex) {
+        this.canvas.bringObjectForward(fabricObj)
+      }
+      this.updateElementOrder()
+    }
+  }
+
+  /**
+   * 更新数据模型中的元素顺序
+   */
+  private updateElementOrder(): void {
+    const page = this.getActivePage()
+    if (!page || !this.canvas) return
+
+    const objects = this.canvas.getObjects()
+    const newOrder: Element[] = []
+
+    for (const obj of objects) {
+      const elementId = (obj as any).data?.elementId
+      if (elementId) {
+        const element = page.elements.find((el) => el.id === elementId)
+        if (element) {
+          newOrder.push(element)
+        }
+      }
+    }
+
+    page.elements = newOrder
   }
 
   // ========== 导出 ==========

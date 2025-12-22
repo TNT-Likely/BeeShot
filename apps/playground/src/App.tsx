@@ -10,11 +10,15 @@ import {
   Toolbar,
   Footer,
   Canvas,
+  PropertyPanel,
+  LayerPanel,
+  ElementToolbar,
   type SidebarTab,
 } from './components/layout'
 import { useTheme } from './hooks'
+import { getTemplateById, getDeviceById } from './config'
 
-// 示例文档
+// 示例文档 - 默认白色背景
 const createDefaultDocument = (): Document => ({
   id: generateId('doc'),
   version: '1.0.0',
@@ -28,15 +32,8 @@ const createDefaultDocument = (): Document => ({
       width: 1290,
       height: 2796,
       background: {
-        type: 'gradient',
-        gradient: {
-          type: 'linear',
-          angle: 135,
-          stops: [
-            { offset: 0, color: '#667eea' },
-            { offset: 1, color: '#764ba2' },
-          ],
-        },
+        type: 'solid',
+        color: '#ffffff',
       },
       elements: [],
     },
@@ -52,6 +49,8 @@ function App() {
   const [currentPageIndex, setCurrentPageIndex] = useState(0)
   const [zoom, setZoom] = useState(50)
   const [projectName, setProjectName] = useState('未命名项目')
+  const [showLayerPanel, setShowLayerPanel] = useState(false)
+  const [sidebarHovered, setSidebarHovered] = useState(false)
   const { isDark, toggle: toggleTheme } = useTheme()
 
   // 初始化编辑器
@@ -89,11 +88,12 @@ function App() {
 
   // 添加页面
   const handleAddPage = () => {
+    const currentPage = document.pages[currentPageIndex]
     const newPage = {
       id: generateId('page'),
       name: `第 ${document.pages.length + 1} 页`,
-      width: 1290,
-      height: 2796,
+      width: currentPage?.width || 1290,
+      height: currentPage?.height || 2796,
       background: { type: 'solid' as const, color: '#ffffff' },
       elements: [],
     }
@@ -101,6 +101,52 @@ function App() {
       ...document,
       pages: [...document.pages, newPage],
     })
+  }
+
+  // 选择模板
+  const handleTemplateSelect = (templateId: string) => {
+    const template = getTemplateById(templateId)
+    if (!template) return
+
+    const newDoc = template.createDocument()
+    setDocument(newDoc)
+    setProjectName(newDoc.name)
+
+    // 重新加载文档到渲染器
+    if (editor) {
+      editor.renderer.loadDocument(newDoc)
+      setTimeout(() => {
+        editor.renderer.zoomToFit()
+      }, 100)
+    }
+  }
+
+  // 选择设备尺寸
+  const handleDeviceSelect = (deviceId: string) => {
+    const device = getDeviceById(deviceId)
+    if (!device || !editor) return
+
+    // 更新当前页面尺寸
+    const updatedPages = document.pages.map((page, index) => {
+      if (index === currentPageIndex) {
+        return { ...page, width: device.width, height: device.height }
+      }
+      return page
+    })
+
+    const newDoc = { ...document, pages: updatedPages }
+    setDocument(newDoc)
+
+    // 重新加载文档
+    editor.renderer.loadDocument(newDoc)
+    setTimeout(() => {
+      editor.renderer.zoomToFit()
+    }, 100)
+  }
+
+  // 切换图层面板
+  const handleToggleLayerPanel = () => {
+    setShowLayerPanel(!showLayerPanel)
   }
 
   // 导出
@@ -136,15 +182,44 @@ function App() {
         />
 
         {/* Main Content */}
-        <div className="flex flex-1 overflow-hidden">
+        <div
+          className="flex flex-1 overflow-hidden relative"
+          onMouseLeave={() => {
+            setActiveTab(null)
+            setSidebarHovered(false)
+          }}
+        >
           {/* Icon Sidebar */}
-          <IconSidebar activeTab={activeTab} onTabChange={setActiveTab} />
+          <IconSidebar
+            activeTab={activeTab}
+            onTabHover={(tab) => {
+              setActiveTab(tab)
+              setSidebarHovered(true)
+            }}
+          />
 
-          {/* Side Panel */}
-          <SidePanel activeTab={activeTab} />
+          {/* Side Panel - floating overlay */}
+          <SidePanel
+            activeTab={activeTab}
+            isHovered={sidebarHovered}
+            onTemplateSelect={handleTemplateSelect}
+            onDeviceSelect={handleDeviceSelect}
+          />
 
-          {/* Canvas */}
-          <Canvas ref={canvasRef} />
+          {/* Canvas Workspace */}
+          <div className="flex-1 min-w-0 min-h-0 relative overflow-hidden">
+            {/* Canvas */}
+            <Canvas ref={canvasRef} />
+
+            {/* Floating Element Toolbar (appears when element selected) */}
+            <ElementToolbar />
+
+            {/* Floating Property Panel (inside canvas area) */}
+            <PropertyPanel />
+
+            {/* Layer Panel (Floating) */}
+            <LayerPanel isOpen={showLayerPanel} />
+          </div>
         </div>
 
         {/* Footer */}
@@ -155,6 +230,8 @@ function App() {
           onAddPage={handleAddPage}
           zoom={zoom}
           onZoomChange={handleZoomChange}
+          onToggleLayers={handleToggleLayerPanel}
+          showLayers={showLayerPanel}
         />
       </div>
     </EditorProvider>

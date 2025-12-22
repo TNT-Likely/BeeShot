@@ -9,19 +9,19 @@ export function useHistory() {
   const [, forceUpdate] = useState({})
 
   const undo = useCallback(() => {
-    editor.undo()
+    editor?.undo()
     forceUpdate({})
   }, [editor])
 
   const redo = useCallback(() => {
-    editor.redo()
+    editor?.redo()
     forceUpdate({})
   }, [editor])
 
   return {
     undo,
     redo,
-    canUndo: editor.history.canUndo(),
-    canRedo: editor.history.canRedo(),
+    canUndo: editor?.history.canUndo() ?? false,
+    canRedo: editor?.history.canRedo() ?? false,
   }
 }

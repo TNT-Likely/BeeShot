@@ -2,6 +2,7 @@ import type { IRenderer } from '@beeshot/renderer'
 import type { Element } from '@beeshot/core'
 import { HistoryManager, AddElementCommand, UpdateElementCommand, RemoveElementCommand } from './history'
 import { ShortcutManager } from './shortcuts'
+import { ClipboardManager } from './clipboard'
 
 export interface EditorOptions {
   renderer: IRenderer
@@ -15,10 +16,12 @@ export class Editor {
   public readonly renderer: IRenderer
   public readonly history: HistoryManager
   public readonly shortcuts: ShortcutManager
+  public readonly clipboard: ClipboardManager
 
   constructor(options: EditorOptions) {
     this.renderer = options.renderer
     this.history = new HistoryManager()
+    this.clipboard = new ClipboardManager(options.renderer)
     this.shortcuts = new ShortcutManager(this)
 
     if (options.enableShortcuts !== false) {
@@ -79,6 +82,24 @@ export class Editor {
 
   clearSelection(): void {
     this.renderer.clearSelection()
+  }
+
+  // ========== 剪贴板操作 ==========
+
+  copy(): void {
+    this.clipboard.copy()
+  }
+
+  async paste(): Promise<void> {
+    await this.clipboard.paste()
+  }
+
+  cut(): void {
+    this.clipboard.cut()
+  }
+
+  async duplicate(): Promise<void> {
+    await this.clipboard.duplicate()
   }
 
   // ========== 导出 ==========

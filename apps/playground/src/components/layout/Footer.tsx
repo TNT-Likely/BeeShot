@@ -1,4 +1,4 @@
-import { Plus, ChevronLeft, ChevronRight, Minus, Grid3X3, HelpCircle } from 'lucide-react'
+import { Plus, ChevronLeft, ChevronRight, Minus, Grid3X3, HelpCircle, Layers } from 'lucide-react'
 
 interface Page {
   id: string
@@ -13,6 +13,8 @@ interface FooterProps {
   onAddPage: () => void
   zoom: number
   onZoomChange: (zoom: number) => void
+  onToggleLayers?: () => void
+  showLayers?: boolean
 }
 
 export function Footer({
@@ -22,15 +24,17 @@ export function Footer({
   onAddPage,
   zoom,
   onZoomChange,
+  onToggleLayers,
+  showLayers,
 }: FooterProps) {
   return (
-    <footer className="flex items-center justify-between h-12 px-4 bg-white dark:bg-sidebar border-t border-gray-200 dark:border-gray-800/50 shrink-0">
+    <footer className="flex items-center justify-between h-11 px-4 bg-white dark:bg-sidebar border-t border-gray-200 dark:border-gray-800/50 shrink-0">
       {/* Left - Page Thumbnails */}
       <div className="flex items-center gap-2">
         {/* Add Page */}
         <button
           onClick={onAddPage}
-          className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 dark:bg-sidebar-hover hover:bg-gray-200 dark:hover:bg-white/20 text-gray-600 dark:text-white transition-colors"
+          className="flex items-center justify-center w-7 h-7 rounded-lg bg-gray-100 dark:bg-sidebar-hover hover:bg-gray-200 dark:hover:bg-white/20 text-gray-600 dark:text-white transition-colors"
           title="添加页面"
         >
           <Plus size={16} strokeWidth={2} />
@@ -43,9 +47,9 @@ export function Footer({
               key={page.id}
               onClick={() => onPageSelect(index)}
               className={`
-                relative w-8 h-8 rounded-lg overflow-hidden transition-all
+                relative w-7 h-7 rounded-lg overflow-hidden transition-all
                 ${index === currentPageIndex
-                  ? 'ring-2 ring-brand ring-offset-1 ring-offset-white dark:ring-offset-sidebar'
+                  ? 'ring-2 ring-sky-500 ring-offset-1 ring-offset-white dark:ring-offset-sidebar'
                   : 'opacity-60 hover:opacity-100'
                 }
               `}
@@ -92,6 +96,19 @@ export function Footer({
 
       {/* Right - Zoom Controls */}
       <div className="flex items-center gap-1">
+        {/* Layers */}
+        <button
+          onClick={onToggleLayers}
+          className={`p-1.5 rounded-lg transition-colors ${
+            showLayers
+              ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
+              : 'text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-sidebar-hover'
+          }`}
+          title="图层面板"
+        >
+          <Layers size={16} />
+        </button>
+
         {/* Help */}
         <button className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-sidebar-hover transition-colors">
           <HelpCircle size={16} />
@@ -103,7 +120,7 @@ export function Footer({
         </button>
 
         {/* Zoom Controls */}
-        <div className="flex items-center gap-1 ml-2 bg-gray-100 dark:bg-sidebar-hover rounded-lg px-1">
+        <div className="flex items-center ml-2 bg-gray-100 dark:bg-sidebar-hover rounded-lg px-1">
           <button
             onClick={() => onZoomChange(Math.max(10, zoom - 10))}
             className="p-1.5 rounded text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white transition-colors"
