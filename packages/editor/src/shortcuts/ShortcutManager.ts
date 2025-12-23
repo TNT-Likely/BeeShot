@@ -47,6 +47,13 @@ export class ShortcutManager {
     this.register({ key: 'v', ctrl: true, action: () => this.editor.paste() })
     this.register({ key: 'x', ctrl: true, action: () => this.editor.cut() })
     this.register({ key: 'd', ctrl: true, action: () => this.editor.duplicate() })
+
+    // 缩放
+    this.register({ key: '=', ctrl: true, action: () => this.editor.zoomIn() })
+    this.register({ key: '+', ctrl: true, action: () => this.editor.zoomIn() })
+    this.register({ key: '-', ctrl: true, action: () => this.editor.zoomOut() })
+    this.register({ key: '0', ctrl: true, action: () => this.editor.resetZoom() })
+    this.register({ key: '1', ctrl: true, action: () => this.editor.zoomToFit() })
   }
 
   /**

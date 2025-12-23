@@ -1,5 +1,5 @@
 import { createContext, useContext, type ReactNode } from 'react'
-import type { Editor } from '@beeshot/editor'
+import type { Editor } from '../../Editor'
 
 const EditorContext = createContext<Editor | null>(null)
 

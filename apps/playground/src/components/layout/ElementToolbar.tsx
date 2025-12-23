@@ -10,7 +10,7 @@ import {
   AlignRight,
   Palette,
 } from 'lucide-react'
-import { useSelection, useEditorContext } from '@beeshot/ui'
+import { useSelection, useEditorContext } from '@beeshot/editor'
 import type { Element, TextElement } from '@beeshot/core'
 import { useState, useEffect } from 'react'
 

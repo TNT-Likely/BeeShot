@@ -1,5 +1,5 @@
 import { Layers, Eye, EyeOff, Lock, Unlock, Trash2, Type, Image, Square, X } from 'lucide-react'
-import { useSelection, useEditorContext } from '@beeshot/ui'
+import { useSelection, useEditorContext } from '@beeshot/editor'
 import type { Element } from '@beeshot/core'
 import { useState, useEffect } from 'react'
 

@@ -102,6 +102,26 @@ export class Editor {
     await this.clipboard.duplicate()
   }
 
+  // ========== 缩放操作 ==========
+
+  zoomIn(): void {
+    const zoom = Math.min(this.renderer.getZoom() * 1.2, 5)
+    this.renderer.setZoom(zoom)
+  }
+
+  zoomOut(): void {
+    const zoom = Math.max(this.renderer.getZoom() / 1.2, 0.1)
+    this.renderer.setZoom(zoom)
+  }
+
+  zoomToFit(): void {
+    this.renderer.zoomToFit()
+  }
+
+  resetZoom(): void {
+    this.renderer.setZoom(1)
+  }
+
   // ========== 导出 ==========
 
   async exportToPNG(scale = 1): Promise<Blob> {

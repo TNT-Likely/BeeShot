@@ -44,11 +44,12 @@ export class FabricRenderer implements IRenderer {
       selection: true,
       preserveObjectStacking: true,
       stopContextMenu: true,
-      backgroundColor: '#e0e0e0',
+      backgroundColor: '#F0F1F5',
     })
 
     this.setupEventListeners()
     this.setupResizeObserver()
+    this.setupWheelZoom()
   }
 
   private setupResizeObserver(): void {
@@ -69,6 +70,35 @@ export class FabricRenderer implements IRenderer {
     })
 
     resizeObserver.observe(this.container)
+  }
+
+  /**
+   * 设置滚轮缩放
+   */
+  private setupWheelZoom(): void {
+    if (!this.canvas) return
+
+    this.canvas.on('mouse:wheel', (opt) => {
+      const e = opt.e as WheelEvent
+      e.preventDefault()
+      e.stopPropagation()
+
+      const delta = e.deltaY
+      let zoom = this.canvas!.getZoom()
+
+      // 缩放因子
+      zoom *= 0.999 ** delta
+
+      // 限制缩放范围
+      if (zoom > 5) zoom = 5
+      if (zoom < 0.1) zoom = 0.1
+
+      // 以画布中心缩放
+      const center = this.canvas!.getCenterPoint()
+      this.canvas!.zoomToPoint(center, zoom)
+      this.centerContent()
+      this.eventEmitter.emit('zoom:changed', zoom)
+    })
   }
 
   unmount(): void {
@@ -533,6 +563,21 @@ export class FabricRenderer implements IRenderer {
     this.eventEmitter.emit('zoom:changed', zoom)
   }
 
+  zoomToFill(): void {
+    if (!this.canvas || !this.container || !this.pageWidth || !this.pageHeight) return
+
+    const { width: containerWidth, height: containerHeight } = this.container.getBoundingClientRect()
+
+    // 填满屏幕 - 取较大的缩放比例
+    const scaleX = containerWidth / this.pageWidth
+    const scaleY = containerHeight / this.pageHeight
+    const zoom = Math.max(scaleX, scaleY)
+
+    this.canvas.setZoom(zoom)
+    this.centerContent()
+    this.eventEmitter.emit('zoom:changed', zoom)
+  }
+
   pan(deltaX: number, deltaY: number): void {
     if (!this.canvas) return
 
@@ -651,6 +696,43 @@ export class FabricRenderer implements IRenderer {
 
   toJSON(): string {
     return JSON.stringify(this.document)
+  }
+
+  /**
+   * 生成当前页面的缩略图
+   */
+  getThumbnail(maxSize = 100): string {
+    if (!this.canvas || !this.pageWidth || !this.pageHeight) return ''
+
+    // 保存当前视口状态
+    const currentZoom = this.canvas.getZoom()
+    const currentVpt = this.canvas.viewportTransform
+
+    // 计算缩略图缩放比例
+    const scale = Math.min(maxSize / this.pageWidth, maxSize / this.pageHeight)
+
+    // 重置视口以导出原始内容
+    this.canvas.setViewportTransform([1, 0, 0, 1, 0, 0])
+    this.canvas.setZoom(1)
+
+    // 生成缩略图
+    const dataUrl = this.canvas.toDataURL({
+      format: 'png',
+      quality: 0.8,
+      multiplier: scale,
+      left: 0,
+      top: 0,
+      width: this.pageWidth,
+      height: this.pageHeight,
+    })
+
+    // 恢复视口状态
+    if (currentVpt) {
+      this.canvas.setViewportTransform(currentVpt)
+    }
+    this.canvas.setZoom(currentZoom)
+
+    return dataUrl
   }
 
   // ========== 事件 ==========

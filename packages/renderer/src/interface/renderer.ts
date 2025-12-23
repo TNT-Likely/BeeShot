@@ -34,6 +34,7 @@ export interface IRenderer {
   setZoom(zoom: number): void
   getZoom(): number
   zoomToFit(): void
+  zoomToFill(): void
   pan(deltaX: number, deltaY: number): void
   centerContent(): void
 
@@ -47,6 +48,9 @@ export interface IRenderer {
   toDataURL(options?: ExportOptions): Promise<string>
   toBlob(options?: ExportOptions): Promise<Blob>
   toJSON(): string
+
+  // 缩略图
+  getThumbnail(maxSize?: number): string
 
   // 事件
   on<K extends keyof RendererEventMap>(

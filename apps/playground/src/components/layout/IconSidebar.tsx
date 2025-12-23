@@ -28,7 +28,7 @@ const tabs: { id: SidebarTab; icon: LucideIcon; label: string }[] = [
 
 export function IconSidebar({ activeTab, onTabHover }: IconSidebarProps) {
   return (
-    <aside className="flex flex-col w-[72px] h-full bg-white dark:bg-[#1e1e1e] border-r border-gray-200 dark:border-gray-800 shrink-0 z-30">
+    <aside className="flex flex-col w-[72px] h-full bg-[#F0F1F5] dark:bg-[#1e1e1e] shrink-0 z-30">
       {/* Logo */}
       <div className="flex items-center justify-center h-12 mt-1">
         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center shadow-sm">

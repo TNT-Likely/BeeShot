@@ -5,6 +5,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
+      "@beeshot/components": ["../../packages/components/src"],
+      "@beeshot/components/*": ["../../packages/components/src/*"],
       "@beeshot/core": ["../../packages/core/src"],
       "@beeshot/core/*": ["../../packages/core/src/*"],
       "@beeshot/renderer": ["../../packages/renderer/src"],

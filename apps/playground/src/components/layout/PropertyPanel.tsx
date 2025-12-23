@@ -1,5 +1,5 @@
 import { X, Type, Image, Square, AlignLeft, AlignCenter, AlignRight } from 'lucide-react'
-import { useSelection, useEditorContext } from '@beeshot/ui'
+import { useSelection, useEditorContext } from '@beeshot/editor'
 import type { Element, TextElement, ImageElement, ShapeElement } from '@beeshot/core'
 import { useState, useEffect } from 'react'
 

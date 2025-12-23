@@ -7,3 +7,6 @@ export * from './Editor'
 export * from './history'
 export * from './shortcuts'
 export * from './clipboard'
+
+// React bindings
+export * from './react'

@@ -1,6 +1,6 @@
 import { Search, X, Square, Circle, Triangle, Minus, Type, Upload } from 'lucide-react'
 import type { SidebarTab } from './IconSidebar'
-import { useEditorContext } from '@beeshot/ui'
+import { useEditorContext } from '@beeshot/editor'
 import { generateId } from '@beeshot/core'
 import type { TextElement, ShapeElement } from '@beeshot/core'
 import { templates, devicePresets } from '../../config'
