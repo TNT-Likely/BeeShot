@@ -1,5 +1,14 @@
-import { Plus, ChevronLeft, ChevronRight, Grid3X3, HelpCircle, Layers, Maximize } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Plus, ChevronLeft, ChevronRight, Grid3X3, HelpCircle, Layers, Maximize, Copy, Trash2, ArrowUp, ArrowDown } from 'lucide-react'
 import { ZoomDropdown } from '@beeshot/components'
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuShortcut,
+  ContextMenuTrigger,
+} from '@beeshot/ui'
 import type { Background } from '@beeshot/core'
 
 interface Page {
@@ -33,6 +42,9 @@ interface FooterProps {
   currentPageIndex: number
   onPageSelect: (index: number) => void
   onAddPage: () => void
+  onDeletePage?: (index: number) => void
+  onDuplicatePage?: (index: number) => void
+  onMovePage?: (fromIndex: number, toIndex: number) => void
   zoom: number
   onZoomChange: (zoom: number) => void
   onZoomToFit?: () => void
@@ -46,6 +58,9 @@ export function Footer({
   currentPageIndex,
   onPageSelect,
   onAddPage,
+  onDeletePage,
+  onDuplicatePage,
+  onMovePage,
   zoom,
   onZoomChange,
   onZoomToFit,
@@ -53,6 +68,25 @@ export function Footer({
   onToggleLayers,
   showLayers,
 }: FooterProps) {
+  const [activeContextIndex, setActiveContextIndex] = useState(-1)
+
+  // 键盘快捷键 - 删除当前页面
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.key === 'Delete' || e.key === 'Backspace') && pages.length > 1) {
+        const target = e.target as HTMLElement
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+          return
+        }
+        // 只在有选中元素时才阻止，因为 CanvasContextMenu 也监听这个事件
+        // 这里的逻辑由 CanvasContextMenu 统一处理
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [pages.length])
+
   return (
     <footer className="flex items-center justify-between h-11 px-4 bg-[#F0F1F5] dark:bg-sidebar shrink-0">
       {/* Left - Page Thumbnails */}
@@ -69,39 +103,71 @@ export function Footer({
         {/* Page Thumbnails */}
         <div className="flex items-center gap-2 ml-1">
           {pages.slice(0, 5).map((page, index) => {
-            // 计算预览比例，高度固定为 36px
             const previewHeight = 36
             const aspectRatio = (page.width || 1290) / (page.height || 2796)
             const previewWidth = Math.round(previewHeight * aspectRatio)
 
             return (
-              <button
-                key={page.id}
-                onClick={() => onPageSelect(index)}
-                className={`
-                  relative rounded overflow-hidden transition-all border border-gray-300
-                  ${index === currentPageIndex
-                    ? 'ring-2 ring-sky-500 ring-offset-1 ring-offset-[#F0F1F5] dark:ring-offset-sidebar'
-                    : 'opacity-70 hover:opacity-100'
-                  }
-                `}
-                style={{
-                  width: previewWidth,
-                  height: previewHeight,
-                }}
-              >
-                <div
-                  className="w-full h-full"
-                  style={{
-                    background: page.thumbnail
-                      ? `url(${page.thumbnail}) center/cover`
-                      : getBackgroundStyle(page.background)
-                  }}
-                />
-                <span className="absolute bottom-0 left-0 right-0 text-[8px] text-gray-600 bg-white/80 text-center leading-tight">
-                  {index + 1}
-                </span>
-              </button>
+              <ContextMenu key={page.id} onOpenChange={(open) => open && setActiveContextIndex(index)}>
+                <ContextMenuTrigger asChild>
+                  <button
+                    onClick={() => onPageSelect(index)}
+                    className={`
+                      relative rounded overflow-hidden transition-all border border-gray-300
+                      ${index === currentPageIndex
+                        ? 'ring-2 ring-sky-500 ring-offset-1 ring-offset-[#F0F1F5] dark:ring-offset-sidebar'
+                        : 'opacity-70 hover:opacity-100'
+                      }
+                    `}
+                    style={{
+                      width: previewWidth,
+                      height: previewHeight,
+                    }}
+                  >
+                    <div
+                      className="w-full h-full"
+                      style={{
+                        background: page.thumbnail
+                          ? `url(${page.thumbnail}) center/cover`
+                          : getBackgroundStyle(page.background)
+                      }}
+                    />
+                    <span className="absolute bottom-0 left-0 right-0 text-[8px] text-gray-600 bg-white/80 text-center leading-tight">
+                      {index + 1}
+                    </span>
+                  </button>
+                </ContextMenuTrigger>
+                <ContextMenuContent className="w-48">
+                  <ContextMenuItem onClick={() => onDuplicatePage?.(activeContextIndex)}>
+                    <Copy className="mr-2 h-4 w-4" />
+                    复制页面
+                  </ContextMenuItem>
+                  <ContextMenuItem
+                    onClick={() => activeContextIndex > 0 && onMovePage?.(activeContextIndex, activeContextIndex - 1)}
+                    disabled={activeContextIndex === 0}
+                  >
+                    <ArrowUp className="mr-2 h-4 w-4" />
+                    上移
+                  </ContextMenuItem>
+                  <ContextMenuItem
+                    onClick={() => activeContextIndex < pages.length - 1 && onMovePage?.(activeContextIndex, activeContextIndex + 1)}
+                    disabled={activeContextIndex === pages.length - 1}
+                  >
+                    <ArrowDown className="mr-2 h-4 w-4" />
+                    下移
+                  </ContextMenuItem>
+                  <ContextMenuSeparator />
+                  <ContextMenuItem
+                    onClick={() => pages.length > 1 && onDeletePage?.(activeContextIndex)}
+                    disabled={pages.length <= 1}
+                    className="text-red-600 focus:text-red-600"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    删除页面
+                    <ContextMenuShortcut>⌫</ContextMenuShortcut>
+                  </ContextMenuItem>
+                </ContextMenuContent>
+              </ContextMenu>
             )
           })}
           {pages.length > 5 && (

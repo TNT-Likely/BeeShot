@@ -47,9 +47,48 @@ export class FabricRenderer implements IRenderer {
       backgroundColor: '#F0F1F5',
     })
 
+    // 设置全局选中样式
+    this.setupSelectionStyle()
     this.setupEventListeners()
     this.setupResizeObserver()
     this.setupWheelZoom()
+  }
+
+  /**
+   * 设置选中样式 - 紫色边框 + 圆形控制点
+   */
+  private setupSelectionStyle(): void {
+    if (!this.canvas) return
+
+    // 全局默认样式
+    const selectionColor = '#8B5CF6' // 紫色
+    const defaultControls = {
+      borderColor: selectionColor,
+      borderScaleFactor: 2,
+      cornerColor: '#FFFFFF',
+      cornerStrokeColor: selectionColor,
+      cornerSize: 10,
+      cornerStyle: 'circle' as const,
+      transparentCorners: false,
+      padding: 0,
+      rotatingPointOffset: 30,
+    }
+
+    // 设置 canvas 的多选框样式
+    this.canvas.selectionColor = 'rgba(139, 92, 246, 0.1)'
+    this.canvas.selectionBorderColor = selectionColor
+    this.canvas.selectionLineWidth = 2
+
+    // 设置对象默认样式 - 通过原型设置
+    Object.assign(this.canvas.getActiveObject?.() || {}, defaultControls)
+
+    // 监听对象添加，设置选中样式
+    this.canvas.on('object:added', (e) => {
+      const obj = e.target
+      if (obj && (obj as any).data?.elementId) {
+        obj.set(defaultControls)
+      }
+    })
   }
 
   private setupResizeObserver(): void {
@@ -699,8 +738,30 @@ export class FabricRenderer implements IRenderer {
   }
 
   /**
-   * 生成当前页面的缩略图
+   * 获取元素在视口中的边界（屏幕坐标）
    */
+  getElementBounds(id: string): { left: number; top: number; width: number; height: number } | null {
+    if (!this.canvas || !this.container) return null
+
+    const fabricObj = this.elementMap.get(id)
+    if (!fabricObj) return null
+
+    const zoom = this.canvas.getZoom()
+    const vpt = this.canvas.viewportTransform
+    if (!vpt) return null
+
+    // 获取对象的边界框
+    const boundingRect = fabricObj.getBoundingRect()
+
+    // 转换为屏幕坐标
+    return {
+      left: boundingRect.left * zoom + vpt[4],
+      top: boundingRect.top * zoom + vpt[5],
+      width: boundingRect.width * zoom,
+      height: boundingRect.height * zoom,
+    }
+  }
+
   getThumbnail(maxSize = 100): string {
     if (!this.canvas || !this.pageWidth || !this.pageHeight) return ''
 

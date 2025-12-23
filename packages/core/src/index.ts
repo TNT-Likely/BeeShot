@@ -11,3 +11,6 @@ export * from './utils'
 
 // Events
 export * from './events'
+
+// Storage
+export * from './storage'

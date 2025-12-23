@@ -7,6 +7,9 @@ import {
   Share2,
   MoreHorizontal,
   Home,
+  Plus,
+  Check,
+  Loader2,
 } from 'lucide-react'
 
 interface ToolbarProps {
@@ -19,6 +22,9 @@ interface ToolbarProps {
   onUndo: () => void
   onRedo: () => void
   onExport: () => void
+  saveStatus?: 'saved' | 'saving' | 'unsaved'
+  onSave?: () => void
+  onNewProject?: () => void
 }
 
 export function Toolbar({
@@ -29,7 +35,34 @@ export function Toolbar({
   onUndo,
   onRedo,
   onExport,
+  saveStatus = 'saved',
+  onSave,
+  onNewProject,
 }: ToolbarProps) {
+  const getSaveStatusText = () => {
+    switch (saveStatus) {
+      case 'saving':
+        return '保存中...'
+      case 'unsaved':
+        return '未保存'
+      case 'saved':
+      default:
+        return '已保存'
+    }
+  }
+
+  const getSaveStatusIcon = () => {
+    switch (saveStatus) {
+      case 'saving':
+        return <Loader2 size={14} className="animate-spin" />
+      case 'unsaved':
+        return <Clock size={14} />
+      case 'saved':
+      default:
+        return <Check size={14} />
+    }
+  }
+
   return (
     <header className="flex items-center justify-between h-12 px-4 bg-white dark:bg-sidebar border-b border-gray-200 dark:border-gray-800/50 shrink-0">
       {/* Left Section */}
@@ -38,6 +71,17 @@ export function Toolbar({
         <button className="p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-sidebar-hover transition-colors">
           <Home size={18} strokeWidth={1.5} />
         </button>
+
+        {/* New Project */}
+        {onNewProject && (
+          <button
+            onClick={onNewProject}
+            className="p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-sidebar-hover transition-colors"
+            title="新建项目"
+          >
+            <Plus size={18} strokeWidth={1.5} />
+          </button>
+        )}
 
         {/* Divider */}
         <div className="w-px h-6 bg-gray-200 dark:bg-gray-700" />
@@ -78,10 +122,20 @@ export function Toolbar({
           </button>
         </div>
 
-        {/* Time */}
-        <button className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs text-gray-400 hover:bg-gray-100 dark:hover:bg-sidebar-hover transition-colors">
-          <Clock size={14} />
-          <span>刚刚保存</span>
+        {/* Save Status */}
+        <button
+          onClick={onSave}
+          className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs transition-colors ${
+            saveStatus === 'saved'
+              ? 'text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20'
+              : saveStatus === 'saving'
+                ? 'text-gray-400'
+                : 'text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20'
+          }`}
+          title={saveStatus === 'unsaved' ? '点击保存' : undefined}
+        >
+          {getSaveStatusIcon()}
+          <span>{getSaveStatusText()}</span>
         </button>
       </div>
 

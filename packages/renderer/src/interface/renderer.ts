@@ -52,6 +52,9 @@ export interface IRenderer {
   // 缩略图
   getThumbnail(maxSize?: number): string
 
+  // 获取元素在视口中的边界
+  getElementBounds(id: string): { left: number; top: number; width: number; height: number } | null
+
   // 事件
   on<K extends keyof RendererEventMap>(
     event: K,

@@ -1,8 +1,8 @@
-import { Search, X, Square, Circle, Triangle, Minus, Type, Upload } from 'lucide-react'
+import { Search, X, Square, Circle, Triangle, Minus, Type, Upload, Trash2 } from 'lucide-react'
 import type { SidebarTab } from './IconSidebar'
 import { useEditorContext } from '@beeshot/editor'
 import { generateId } from '@beeshot/core'
-import type { TextElement, ShapeElement } from '@beeshot/core'
+import type { TextElement, ShapeElement, ProjectRecord } from '@beeshot/core'
 import { templates, devicePresets } from '../../config'
 
 interface SidePanelProps {
@@ -11,9 +11,21 @@ interface SidePanelProps {
   onClose?: () => void
   onTemplateSelect?: (templateId: string) => void
   onDeviceSelect?: (deviceId: string) => void
+  savedProjects?: ProjectRecord[]
+  onLoadProject?: (projectId: string) => void
+  onDeleteProject?: (projectId: string) => void
 }
 
-export function SidePanel({ activeTab, isHovered, onClose, onTemplateSelect, onDeviceSelect }: SidePanelProps) {
+export function SidePanel({
+  activeTab,
+  isHovered,
+  onClose,
+  onTemplateSelect,
+  onDeviceSelect,
+  savedProjects = [],
+  onLoadProject,
+  onDeleteProject,
+}: SidePanelProps) {
   const editor = useEditorContext()
 
   // 只在 hover 时显示
@@ -121,7 +133,13 @@ export function SidePanel({ activeTab, isHovered, onClose, onTemplateSelect, onD
         {activeTab === 'uploads' && <UploadsPanel />}
         {activeTab === 'photos' && <PhotosPanel />}
         {activeTab === 'brand' && <BrandPanel />}
-        {activeTab === 'projects' && <ProjectsPanel />}
+        {activeTab === 'projects' && (
+          <ProjectsPanel
+            projects={savedProjects}
+            onLoad={onLoadProject}
+            onDelete={onDeleteProject}
+          />
+        )}
       </div>
     </aside>
   )
@@ -412,18 +430,96 @@ function BrandPanel() {
 }
 
 // 项目面板
-function ProjectsPanel() {
+function ProjectsPanel({
+  projects,
+  onLoad,
+  onDelete,
+}: {
+  projects: ProjectRecord[]
+  onLoad?: (id: string) => void
+  onDelete?: (id: string) => void
+}) {
+  const formatDate = (timestamp: number) => {
+    const date = new Date(timestamp)
+    const now = new Date()
+    const diff = now.getTime() - timestamp
+
+    // 小于 1 分钟
+    if (diff < 60 * 1000) {
+      return '刚刚'
+    }
+    // 小于 1 小时
+    if (diff < 60 * 60 * 1000) {
+      return `${Math.floor(diff / (60 * 1000))} 分钟前`
+    }
+    // 小于 24 小时
+    if (diff < 24 * 60 * 60 * 1000) {
+      return `${Math.floor(diff / (60 * 60 * 1000))} 小时前`
+    }
+    // 同一年
+    if (date.getFullYear() === now.getFullYear()) {
+      return `${date.getMonth() + 1}月${date.getDate()}日`
+    }
+    // 不同年
+    return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`
+  }
+
   return (
     <div className="space-y-5">
-      <button className="w-full py-3 px-4 rounded-lg bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 font-semibold text-sm transition-colors">
-        新建项目
-      </button>
-
       <div>
         <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3 uppercase">
           最近项目
         </h3>
-        <div className="text-center text-gray-400 text-sm py-8">暂无项目</div>
+        {projects.length === 0 ? (
+          <div className="text-center text-gray-400 text-sm py-8">暂无项目</div>
+        ) : (
+          <div className="space-y-2">
+            {projects.map((project) => (
+              <div
+                key={project.id}
+                className="group relative flex gap-3 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-sidebar-hover transition-colors cursor-pointer"
+                onClick={() => onLoad?.(project.id)}
+              >
+                {/* 缩略图 */}
+                <div className="w-16 h-16 rounded-lg bg-gray-200 dark:bg-gray-700 overflow-hidden shrink-0">
+                  {project.thumbnail ? (
+                    <img
+                      src={project.thumbnail}
+                      alt={project.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                      无预览
+                    </div>
+                  )}
+                </div>
+
+                {/* 项目信息 */}
+                <div className="flex-1 min-w-0 py-1">
+                  <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                    {project.name}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {formatDate(project.updatedAt)}
+                  </div>
+                </div>
+
+                {/* 删除按钮 */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onDelete?.(project.id)
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100 transition-all"
+                  title="删除项目"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

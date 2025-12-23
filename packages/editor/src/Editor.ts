@@ -66,6 +66,34 @@ export class Editor {
     ids.forEach((id) => this.removeElement(id))
   }
 
+  /**
+   * 获取当前选中的元素
+   */
+  getSelection(): Element[] {
+    const ids = this.renderer.getSelection()
+    return ids
+      .map(id => this.renderer.getElement(id))
+      .filter((el): el is Element => el !== null)
+  }
+
+  // ========== 图层操作 ==========
+
+  bringToFront(id: string): void {
+    this.renderer.bringToFront?.(id)
+  }
+
+  sendToBack(id: string): void {
+    this.renderer.sendToBack?.(id)
+  }
+
+  bringForward(id: string): void {
+    this.renderer.bringForward?.(id)
+  }
+
+  sendBackward(id: string): void {
+    this.renderer.sendBackward?.(id)
+  }
+
   // ========== 快捷操作 ==========
 
   undo(): void {
